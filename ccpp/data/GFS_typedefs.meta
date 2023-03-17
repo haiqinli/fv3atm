@@ -3660,6 +3660,12 @@
   units = flag
   dimensions = ()
   type = integer
+[imp_physics_ufs]
+  standard_name = flag_for_ufs_microphysics_scheme
+  long_name = choice of UFS microphysics scheme
+  units = flag
+  dimensions = ()
+  type = integer
 [imp_physics_wsm6]
   standard_name = identifier_for_wsm6_microphysics_scheme
   long_name = choice of WSM6 microphysics scheme

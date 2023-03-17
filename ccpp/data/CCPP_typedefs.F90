@@ -831,7 +831,7 @@ contains
 !
     ! Allocate arrays that are conditional on physics choices
     if (Model%imp_physics == Model%imp_physics_gfdl .or. Model%imp_physics == Model%imp_physics_thompson &
-        .or. Model%imp_physics == Model%imp_physics_nssl &
+        .or. Model%imp_physics == Model%imp_physics_nssl .or. Model%imp_physics == Model%imp_physics_ufs &
         ) then
        allocate (Interstitial%graupelmp  (IM))
        allocate (Interstitial%icemp      (IM))

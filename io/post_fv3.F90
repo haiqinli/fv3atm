@@ -2923,8 +2923,8 @@ module post_fv3
               enddo
             endif
 
-! for GFDL MP or Thompson MP
-            if (imp_physics == 11 .or. imp_physics == 8) then
+! for GFDL MP or Thompson MP or UFS MP
+            if (imp_physics == 11 .or. imp_physics == 8 .or. imp_physics == 21) then
               ! model level cloud water mixing ratio
               if(trim(fieldname)=='clwmr') then
                 !$omp parallel do default(none) private(i,j,l) shared(lm,jsta,jend,ista,iend,qqw,arrayr43d,fillvalue,spval)
