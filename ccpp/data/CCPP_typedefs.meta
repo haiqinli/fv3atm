@@ -533,6 +533,14 @@
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
+[dqdt(:,:,index_of_mass_number_concentration_of_rain_in_tracer_concentration_array)]
+  standard_name = process_split_cumulative_tendency_of_mass_number_concentration_of_rain_water_particles_in_air
+  long_name = number concentration of rain tendency due to model physics
+  units = kg-1 s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  active = (index_of_mass_number_concentration_of_rain_in_tracer_concentration_array > 0)
 [dqdt(:,:,index_of_mass_number_concentration_of_hygroscopic_aerosols_in_tracer_concentration_array)]
   standard_name = process_split_cumulative_tendency_of_mass_number_concentration_of_hygroscopic_aerosols
   long_name = number concentration of water-friendly aerosols tendency due to model physics

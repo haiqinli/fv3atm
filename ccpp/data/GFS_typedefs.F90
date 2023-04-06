@@ -809,6 +809,7 @@ module GFS_typedefs
     integer              :: imp_physics_zhao_carr_pdf = 98 !< choice of Zhao-Carr microphysics scheme with PDF clouds
     integer              :: imp_physics_mg = 10            !< choice of Morrison-Gettelman microphysics scheme
     integer              :: imp_physics_fer_hires = 15     !< choice of Ferrier-Aligo microphysics scheme
+    integer              :: imp_physics_ufs = 21           !< choice of UFS microphysics scheme
     integer :: iovr_rand        = 0 !< choice of cloud-overlap: random
     integer :: iovr_maxrand     = 1 !< choice of cloud-overlap: maximum random
     integer :: iovr_max         = 2 !< choice of cloud-overlap: maximum
@@ -5305,6 +5306,18 @@ module GFS_typedefs
                                           ' num_p3d =',Model%num_p3d, &
                                           ' num_p2d =',Model%num_p2d
 
+    else if (Model%imp_physics == Model%imp_physics_ufs) then ! UFS microphysics
+      Model%npdf3d  = 0
+      Model%num_p3d = 3
+      Model%num_p2d = 1
+      Model%pdfcld  = .false.
+      Model%shcnvcw = .false.
+      Model%ncnd    = 5
+      Model%nleffr = 1
+      Model%nieffr = 2
+      Model%nseffr = 3
+      if (Model%me == Model%master) print *,' Using UFS microphysics'
+
     else if (Model%imp_physics == Model%imp_physics_mg) then        ! Morrison-Gettelman Microphysics
       Model%npdf3d  = 0
       Model%num_p3d = 5
@@ -5367,6 +5380,7 @@ module GFS_typedefs
       if (Model%me == Model%master) print *,' Using GFDL Cloud Microphysics'
 
     else
+     if (Model%me == Model%master) print *,'imp_physics=', Model%imp_physics
       if (Model%me == Model%master) print *,'Wrong imp_physics value. Job abort.'
       stop
     endif
