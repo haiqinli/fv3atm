@@ -621,11 +621,19 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: chem3d  (:,:,:)   => null()  !< 3D aod array
     real (kind=kind_phys), pointer :: ddvel   (:,:  )   => null()  !< 2D dry deposition velocity
 
+    !--- For convective wet removal of  smoke and dust
+    real (kind=kind_phys), pointer :: wetdpc (:,:)   => null()  !< 2D wet deposition array
+
     !--- Fire plume rise diagnostics
     real (kind=kind_phys), pointer :: min_fplume (:)   => null()  !< minimum plume rise level
     real (kind=kind_phys), pointer :: max_fplume (:)   => null()  !< maximum plume rise level
     !--- hourly fire potential index
     real (kind=kind_phys), pointer :: rrfs_hwp   (:)   => null()  !< hourly fire potential index
+
+    !--- Dry deposition diagnostics
+    real (kind=kind_phys), pointer :: drydep_flux_smoke (:) => null()     !< dry deposition flux of smoke
+    real (kind=kind_phys), pointer :: drydep_flux_dust_1 (:) => null()    !< dry deposition flux of fine dust
+    real (kind=kind_phys), pointer :: drydep_flux_coarse_pm (:) => null() !< dry deposition flux of coarse dust
 
     !--- instantaneous quantities for chemistry coupling
     real (kind=kind_phys), pointer :: ushfsfci(:)     => null()  !< instantaneous upward sensible heat flux (w/m**2)
@@ -1437,8 +1445,8 @@ module GFS_typedefs
     integer              :: ntsmoke         !< tracer index for smoke
     integer              :: ntdust          !< tracer index for dust
     integer              :: ntcoarsepm      !< tracer index for coarse PM
-    integer              :: nchem = 3       !< number of prognostic chemical species (vertically mixied)
-    integer              :: ndvel = 3       !< number of prognostic chemical species (which are deposited, usually =nchem)
+    integer              :: nchem           !< number of prognostic chemical species (vertically mixied)
+    integer              :: ndvel           !< number of prognostic chemical species (which are deposited, usually =nchem)
     integer              :: ntchm           !< number of prognostic chemical tracers (advected)
     integer              :: ntchs           !< tracer index for first prognostic chemical tracer
     integer              :: ntche           !< tracer index for last prognostic chemical tracer
@@ -1511,9 +1519,11 @@ module GFS_typedefs
     logical              :: aero_ind_fdb    ! WFA/IFA indirect
     logical              :: aero_dir_fdb    ! smoke/dust direct
     logical              :: rrfs_smoke_debug
+    logical              :: do_smoke_transport
     logical              :: mix_chem
     logical              :: enh_mix
     real(kind=kind_phys) :: smoke_dir_fdb_coef(7) !< smoke & dust direct feedbck coefficents
+    real(kind=kind_phys) :: smoke_conv_wet_coef(3) !< smoke & dust convective wet removal coefficents
 
 !--- debug flags
     logical              :: debug
@@ -3121,17 +3131,25 @@ module GFS_typedefs
       allocate (Coupling%dust_ext  (IM,Model%levs))
       allocate (Coupling%chem3d    (IM,Model%levs,Model%nchem))
       allocate (Coupling%ddvel     (IM,Model%ndvel))
+      allocate (Coupling%wetdpc    (IM,Model%nchem))
       allocate (Coupling%min_fplume(IM))
       allocate (Coupling%max_fplume(IM))
       allocate (Coupling%rrfs_hwp  (IM))
+      allocate (Coupling%drydep_flux_smoke     (IM))
+      allocate (Coupling%drydep_flux_dust_1    (IM))
+      allocate (Coupling%drydep_flux_coarse_pm (IM))
       Coupling%ebu_smoke  = clear_val
       Coupling%smoke_ext  = clear_val
       Coupling%dust_ext   = clear_val
       Coupling%chem3d     = clear_val
       Coupling%ddvel      = clear_val
+      Coupling%wetdpc     = clear_val
       Coupling%min_fplume = clear_val
       Coupling%max_fplume = clear_val
       Coupling%rrfs_hwp   = clear_val
+      Coupling%drydep_flux_smoke     = clear_val
+      Coupling%drydep_flux_dust_1    = clear_val
+      Coupling%drydep_flux_coarse_pm = clear_val
     endif
 
     if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_c3) then
@@ -3826,9 +3844,11 @@ module GFS_typedefs
     logical :: aero_ind_fdb = .false.     ! RRFS-sd wfa/ifa emission
     logical :: aero_dir_fdb = .false.     ! RRFS-sd smoke/dust radiation feedback
     logical :: rrfs_smoke_debug = .false. ! RRFS-sd plumerise debug
+    logical :: do_smoke_transport = .true. ! RRFS-sd convective transport of smoke/dust
     logical :: mix_chem = .false.         ! tracer mixing option by MYNN PBL
     logical :: enh_mix  = .false.         ! enhance vertmix option by MYNN PBL
     real(kind=kind_phys) :: smoke_dir_fdb_coef(7) =(/ 0.33, 0.67, 0.02, 0.13, 0.85, 0.05, 0.95 /) !< smoke & dust direct feedbck coefficents
+    real(kind=kind_phys) :: smoke_conv_wet_coef(3) =(/ 0.50, 0.50, 0.50 /) !< smoke & dust convective wet removal coefficents
 
 !-- Lightning threat index
     logical :: lightning_threat = .false.
@@ -3983,6 +4003,7 @@ module GFS_typedefs
                                wetdep_ls_opt, smoke_forecast, aero_ind_fdb, aero_dir_fdb,   &
                                rrfs_smoke_debug, do_plumerise, plumerisefire_frq,           &
                                addsmoke_flag, enh_mix, mix_chem, smoke_dir_fdb_coef,        &
+                               do_smoke_transport,smoke_conv_wet_coef,                      &
                           !--- C3/GF closures
                                ichoice,ichoicem,ichoice_s,                                  &
                           !--- (DFI) time ranges with radar-prescribed microphysics tendencies
@@ -4215,9 +4236,11 @@ module GFS_typedefs
     Model%aero_ind_fdb      = aero_ind_fdb
     Model%aero_dir_fdb      = aero_dir_fdb
     Model%rrfs_smoke_debug  = rrfs_smoke_debug
+    Model%do_smoke_transport  = do_smoke_transport
     Model%mix_chem          = mix_chem
     Model%enh_mix           = enh_mix
     Model%smoke_dir_fdb_coef  = smoke_dir_fdb_coef
+    Model%smoke_conv_wet_coef = smoke_conv_wet_coef
 
     Model%fire_aux_data_levels = 10
 
@@ -6318,9 +6341,11 @@ module GFS_typedefs
         print *, 'aero_ind_fdb     : ',Model%aero_ind_fdb
         print *, 'aero_dir_fdb     : ',Model%aero_dir_fdb
         print *, 'rrfs_smoke_debug : ',Model%rrfs_smoke_debug
+        print *, 'do_smoke_transport : ',Model%do_smoke_transport
         print *, 'mix_chem         : ',Model%mix_chem
         print *, 'enh_mix          : ',Model%enh_mix
         print *, 'smoke_dir_fdb_coef : ',Model%smoke_dir_fdb_coef
+        print *, 'smoke_conv_wet_coef: ',Model%smoke_conv_wet_coef
       endif
       print *, ' '
       print *, ' lsidea            : ', Model%lsidea

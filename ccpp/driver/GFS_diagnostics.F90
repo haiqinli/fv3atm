@@ -4629,6 +4629,72 @@ module GFS_diagnostics
 
       idx = idx + 1
       ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'drydep_flux_smoke'
+      ExtDiag(idx)%desc = 'dry deposition flux of smoke'
+      ExtDiag(idx)%unit = ' '
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%drydep_flux_smoke
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'drydep_flux_dust_1'
+      ExtDiag(idx)%desc = 'dry deposition flux of fine dust'
+      ExtDiag(idx)%unit = ' '
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%drydep_flux_dust_1
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'drydep_flux_coarse_pm'
+      ExtDiag(idx)%desc = 'dry deposition flux of coarse dust'
+      ExtDiag(idx)%unit = ' '
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%drydep_flux_coarse_pm
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'wetdpc_smoke'
+      ExtDiag(idx)%desc = 'convective wet deposition smoke'
+      ExtDiag(idx)%unit = ' '
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%wetdpc(:,1)
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'wetdpc_dust'
+      ExtDiag(idx)%desc = 'convective wet deposition dust'
+      ExtDiag(idx)%unit = ' '
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%wetdpc(:,2)
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'wetdpc_coarsepm'
+      ExtDiag(idx)%desc = 'convective wet deposition coarsepm'
+      ExtDiag(idx)%unit = ' '
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%wetdpc(:,3)
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
       ExtDiag(idx)%name = 'ebb_smoke_hr'
       ExtDiag(idx)%desc = 'hourly smoke emission'
       ExtDiag(idx)%unit = 'ug m-2 s-1'

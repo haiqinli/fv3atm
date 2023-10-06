@@ -2948,6 +2948,14 @@
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
+[wetdpc]
+  standard_name = conv_wet_deposition_smoke_dust
+  long_name = convective wet removal of smoke and dust
+  units = kg kg-1
+  dimensions = (horizontal_loop_extent,number_of_chemical_species_vertically_mixed)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
 [min_fplume]
   standard_name = minimum_fire_plume_sigma_pressure_level
   long_name = minimum model level of fire plumerise
@@ -2968,6 +2976,30 @@
   standard_name = hourly_wildfire_potential
   long_name = rrfs hourly fire weather potential
   units = none
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[drydep_flux_smoke]
+  standard_name = dry_deposition_flux_smoke
+  long_name = rrfs dry deposition flux of smoke
+  units = ug m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[drydep_flux_dust_1]
+  standard_name = dry_deposition_flux_dust_1
+  long_name = rrfs dry deposition flux of fine dust
+  units = ug m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[drydep_flux_coarse_pm]
+  standard_name = dry_deposition_flux_coarse_pm
+  long_name = rrfs dry deposition flux of coarse dust
+  units = ug m-2
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
@@ -6400,6 +6432,14 @@
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
+[smoke_conv_wet_coef]
+  standard_name = smoke_dust_conv_wet_coef
+  long_name = smoke dust convetive wet scavanging coefficents
+  units = none
+  dimensions = (3)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
 [dust_moist_correction]
   standard_name = dust_moist_correction_fengsha_dust_scheme
   long_name = moisture correction term for fengsha dust emission
@@ -6527,6 +6567,13 @@
 [rrfs_smoke_debug]
   standard_name = do_smoke_debug
   long_name = flag for rrfs smoke plumerise debug
+  units = flag
+  dimensions = ()
+  type = logical
+  active = (do_smoke_coupling)
+[do_smoke_transport]
+  standard_name = do_smoke_conv_transport
+  long_name = flag for rrfs smoke convective transport
   units = flag
   dimensions = ()
   type = logical
