@@ -629,11 +629,20 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: max_fplume (:)   => null()  !< maximum plume rise level
     !--- hourly fire potential index
     real (kind=kind_phys), pointer :: rrfs_hwp   (:)   => null()  !< hourly fire potential index
+    real (kind=kind_phys), pointer :: rrfs_hwp_ave   (:)   => null()  !< *Average* hourly fire potential index
+
+    !--- wildfire heat flux
+    real (kind=kind_phys), pointer :: fire_heat_flux_out (:) => null() !< heat flux from wildfire
 
     !--- Dry deposition diagnostics
     real (kind=kind_phys), pointer :: drydep_flux_smoke (:) => null()     !< dry deposition flux of smoke
     real (kind=kind_phys), pointer :: drydep_flux_dust_1 (:) => null()    !< dry deposition flux of fine dust
     real (kind=kind_phys), pointer :: drydep_flux_coarse_pm (:) => null() !< dry deposition flux of coarse dust
+
+    !--- Wet deposition (resolved) diagnostics for Thompson MP 
+    real (kind=kind_phys), pointer :: wetdpr_smoke (:) => null()
+    real (kind=kind_phys), pointer :: wetdpr_dust (:) => null()
+    real (kind=kind_phys), pointer :: wetdpr_coarsepm (:) => null()
 
     !--- instantaneous quantities for chemistry coupling
     real (kind=kind_phys), pointer :: ushfsfci(:)     => null()  !< instantaneous upward sensible heat flux (w/m**2)
@@ -981,6 +990,7 @@ module GFS_typedefs
     logical              :: nssl_invertccn !<  NSSL flag to treat CCN as activated (true) or unactivated (false)
 
     !--- Thompson's microphysical parameters
+    logical              :: wraerosol       !< flag for wet removal of aerosols
     logical              :: ltaerosol       !< flag for aerosol version
     logical              :: mraerosol       !< flag for merra2_aerosol_aware
     logical              :: lradar          !< flag for radar reflectivity
@@ -1056,6 +1066,9 @@ module GFS_typedefs
     integer              :: mosaic_soil=0   !< control for use of fractional soil in RUC land surface model
     integer              :: isncond_opt=1   !< control for soil thermal conductivity option in RUC land surface model
     integer              :: isncovr_opt=1   !< control for snow cover fraction option in RUC land surface model
+
+    ! -- Fire heat flux
+    logical              :: add_fire_heat_flux=.false. !<control to add fireheatflux to RUC LSM
 
     logical              :: use_ufo         !< flag for gcycle surface option
 
@@ -1510,7 +1523,7 @@ module GFS_typedefs
     integer              :: seas_opt
     integer              :: dust_opt
     integer              :: drydep_opt
-    integer              :: coarsepm_settling
+    integer              :: pm_settling
     integer              :: wetdep_ls_opt
     logical              :: do_plumerise
     integer              :: addsmoke_flag
@@ -3135,9 +3148,14 @@ module GFS_typedefs
       allocate (Coupling%min_fplume(IM))
       allocate (Coupling%max_fplume(IM))
       allocate (Coupling%rrfs_hwp  (IM))
+      allocate (Coupling%rrfs_hwp_ave  (IM))
+      allocate (Coupling%fire_heat_flux_out (IM))
       allocate (Coupling%drydep_flux_smoke     (IM))
       allocate (Coupling%drydep_flux_dust_1    (IM))
       allocate (Coupling%drydep_flux_coarse_pm (IM))
+      allocate (Coupling%wetdpr_smoke (IM))
+      allocate (Coupling%wetdpr_dust (IM))
+      allocate (Coupling%wetdpr_coarsepm (IM))
       Coupling%ebu_smoke  = clear_val
       Coupling%smoke_ext  = clear_val
       Coupling%dust_ext   = clear_val
@@ -3147,9 +3165,14 @@ module GFS_typedefs
       Coupling%min_fplume = clear_val
       Coupling%max_fplume = clear_val
       Coupling%rrfs_hwp   = clear_val
+      Coupling%rrfs_hwp_ave   = clear_val
+      Coupling%fire_heat_flux_out = clear_val
       Coupling%drydep_flux_smoke     = clear_val
       Coupling%drydep_flux_dust_1    = clear_val
       Coupling%drydep_flux_coarse_pm = clear_val
+      Coupling%wetdpr_smoke = clear_val
+      Coupling%wetdpr_dust = clear_val
+      Coupling%wetdpr_coarsepm = clear_val
     endif
 
     if (Model%imfdeepcnv == Model%imfdeepcnv_gf .or. Model%imfdeepcnv == Model%imfdeepcnv_c3) then
@@ -3438,6 +3461,7 @@ module GFS_typedefs
 
     !--- Thompson microphysical parameters
     logical              :: ltaerosol      = .false.            !< flag for aerosol version
+    logical              :: wraerosol      = .false.             !< flag for aerosol wet removal
     logical              :: mraerosol      = .false.            !< flag for merra2_aerosol_aware
     logical              :: lradar         = .false.            !< flag for radar reflectivity
     real(kind=kind_phys) :: nsfullradar_diag  = -999.0          !< seconds between resetting radar reflectivity calculation, set to <0 for every time step
@@ -3512,6 +3536,8 @@ module GFS_typedefs
     integer              :: mosaic_soil    =  0  ! 1 - used of fractional soil in RUC lsm
     integer              :: isncond_opt    =  1  ! 2 - Sturm (1997)
     integer              :: isncovr_opt    =  1  ! 2 - Niu-Yang (2007), 3-updated Niu-Yang similar to Noah MP
+
+    logical              :: add_fire_heat_flux = .false.              !< Flag for fire heat flux
 
     logical              :: use_ufo        = .false.                  !< flag for gcycle surface option
 
@@ -3835,7 +3861,7 @@ module GFS_typedefs
     integer :: seas_opt = 2
     integer :: dust_opt = 5
     integer :: drydep_opt  = 1
-    integer :: coarsepm_settling  = 1
+    integer :: pm_settling  = 1
     integer :: wetdep_ls_opt  = 1
     logical :: do_plumerise   = .false.
     integer :: addsmoke_flag  = 1
@@ -3904,7 +3930,7 @@ module GFS_typedefs
                                mg_ncnst, mg_ninst, mg_ngnst, sed_supersat, do_sb_physics,   &
                                mg_alf,   mg_qcmin, mg_do_ice_gmao, mg_do_liq_liu,           &
                                ltaerosol, lradar, nsfullradar_diag, lrefres, ttendlim,      &
-                               ext_diag_thompson, dt_inner, lgfdlmprad,                     &
+                               ext_diag_thompson, dt_inner, lgfdlmprad, wraerosol,          &
                                sedi_semi, decfl,                                            &
                                nssl_cccn, nssl_alphah, nssl_alphahl,                        &
                                nssl_alphar, nssl_ehw0, nssl_ehlw0,                    &
@@ -3920,6 +3946,7 @@ module GFS_typedefs
                                iopt_inf, iopt_rad,iopt_alb,iopt_snf,iopt_tbot,iopt_stc,     &
                                iopt_trs, iopt_diag,                                         &
                           !    RUC lsm options
+                               add_fire_heat_flux,                                          &
                                mosaic_lu, mosaic_soil, isncond_opt, isncovr_opt,            &
                           !    GFDL surface layer options
                                lcurr_sf, pert_cd, ntsflg, sfenth,                           &
@@ -3999,7 +4026,7 @@ module GFS_typedefs
                           !--- RRFS-SD namelist
                                dust_drylimit_factor, dust_moist_correction, dust_moist_opt, &
                                dust_alpha, dust_gamma, wetdep_ls_alpha,                     &
-                               seas_opt, dust_opt, drydep_opt, coarsepm_settling,           &
+                               seas_opt, dust_opt, drydep_opt, pm_settling,                 &
                                wetdep_ls_opt, smoke_forecast, aero_ind_fdb, aero_dir_fdb,   &
                                rrfs_smoke_debug, do_plumerise, plumerisefire_frq,           &
                                addsmoke_flag, enh_mix, mix_chem, smoke_dir_fdb_coef,        &
@@ -4227,7 +4254,7 @@ module GFS_typedefs
     Model%seas_opt          = seas_opt
     Model%dust_opt          = dust_opt
     Model%drydep_opt        = drydep_opt
-    Model%coarsepm_settling = coarsepm_settling
+    Model%pm_settling       = pm_settling
     Model%wetdep_ls_opt     = wetdep_ls_opt
     Model%do_plumerise      = do_plumerise
     Model%plumerisefire_frq = plumerisefire_frq
@@ -4519,6 +4546,7 @@ module GFS_typedefs
     Model%nssl_invertccn   = nssl_invertccn
 
 !--- Thompson MP parameters
+    Model%wraerosol        = wraerosol
     Model%ltaerosol        = ltaerosol
     Model%mraerosol        = mraerosol
     if (Model%ltaerosol .and. Model%mraerosol) then
@@ -4695,6 +4723,7 @@ module GFS_typedefs
     Model%mosaic_soil      = mosaic_soil
     Model%isncond_opt      = isncond_opt
     Model%isncovr_opt      = isncovr_opt
+    Model%add_fire_heat_flux = add_fire_heat_flux
 
 !--- tuning parameters for physical parameterizations
     Model%ras              = ras
@@ -5914,6 +5943,7 @@ module GFS_typedefs
         stop
       end if
       if (Model%me == Model%master) print *,' Using Thompson double moment microphysics', &
+                                          ' wraerosol = ',Model%wraerosol, &
                                           ' ltaerosol = ',Model%ltaerosol, &
                                           ' mraerosol = ',Model%mraerosol, &
                                           ' ttendlim =',Model%ttendlim, &
@@ -6332,7 +6362,7 @@ module GFS_typedefs
         print *, 'seas_opt         : ',Model%seas_opt
         print *, 'dust_opt         : ',Model%dust_opt
         print *, 'drydep_opt       : ',Model%drydep_opt
-        print *, 'coarsepm_settling: ',Model%coarsepm_settling
+        print *, 'pm_settling      : ',Model%pm_settling
         print *, 'wetdep_ls_opt    : ',Model%wetdep_ls_opt
         print *, 'do_plumerise     : ',Model%do_plumerise
         print *, 'plumerisefire_frq: ',Model%plumerisefire_frq
@@ -6449,6 +6479,7 @@ module GFS_typedefs
       endif
       if (Model%imp_physics == Model%imp_physics_wsm6 .or. Model%imp_physics == Model%imp_physics_thompson) then
         print *, ' Thompson microphysical parameters'
+        print *, ' wraerosol         : ', Model%wraerosol
         print *, ' ltaerosol         : ', Model%ltaerosol
         print *, ' mraerosol         : ', Model%mraerosol
         print *, ' lradar            : ', Model%lradar

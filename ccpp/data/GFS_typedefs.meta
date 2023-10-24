@@ -2980,6 +2980,46 @@
   type = real
   kind = kind_phys
   active = (do_smoke_coupling)
+[rrfs_hwp_ave]
+  standard_name = hourly_wildfire_potential_average
+  long_name = rrfs hourly fire weather potential average
+  units = none
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[fire_heat_flux_out]
+  standard_name = surface_fire_heat_flux
+  long_name = heat flux of fire at the surface
+  units = W m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[wetdpr_smoke]
+  standard_name = wet_deposition_flux_thompson_mp_smoke
+  long_name = wet deposition flux of smoke in thomposon microphysics
+  units = ug m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[wetdpr_dust]
+  standard_name = wet_deposition_flux_thompson_mp_dust_1
+  long_name = wet deposition flux of fine dust in thomposon microphysics
+  units = ug m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
+[wetdpr_coarsepm]
+  standard_name = wet_deposition_flux_thompson_mp_coarse_pm
+  long_name = wet deposition flux of coarse dust in thomposon microphysics
+  units = ug m-2
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  active = (do_smoke_coupling)
 [drydep_flux_smoke]
   standard_name = dry_deposition_flux_smoke
   long_name = rrfs dry deposition flux of smoke

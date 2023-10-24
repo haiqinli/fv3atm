@@ -4618,14 +4618,73 @@ module GFS_diagnostics
 
       idx = idx + 1
       ExtDiag(idx)%axes = 2
-      ExtDiag(idx)%name = 'HWP'
-      ExtDiag(idx)%desc = 'hourly fire weather potential'
+      ExtDiag(idx)%name = 'HWPI'
+      ExtDiag(idx)%desc = 'instantaneous hourly fire weather potential'
       ExtDiag(idx)%unit = ' '
+      ExtDiag(idx)%time_avg = .FALSE.
       ExtDiag(idx)%mod_name = 'gfs_sfc'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
         ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%rrfs_hwp
       enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'HWP'
+      ExtDiag(idx)%desc = 'average hourly fire weather potential'
+      ExtDiag(idx)%unit = ' '
+      ExtDiag(idx)%time_avg = .TRUE.
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%rrfs_hwp_ave
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'fire_heat_flux_out'
+      ExtDiag(idx)%desc = 'hourly fire heat flux'
+      ExtDiag(idx)%unit = 'W m-2'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%fire_heat_flux_out
+      enddo
+
+!      if (Model%wraerosol) then
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'wetdpr_smoke'
+      ExtDiag(idx)%desc = 'wet deposition flux of smoke'
+      ExtDiag(idx)%unit = 'ug m-2'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%wetdpr_smoke
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'wetdpr_dust'
+      ExtDiag(idx)%desc = 'wet deposition flux of fine dust'
+      ExtDiag(idx)%unit = 'ug m-2'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%wetdpr_dust
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'wetdpr_coarsepm'
+      ExtDiag(idx)%desc = 'wet deposition flux of coarse dust'
+      ExtDiag(idx)%unit = 'ug m-2'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%wetdpr_coarsepm
+      enddo
+ !     endif ! wet removal of aerosol in thmp MP is active
 
       idx = idx + 1
       ExtDiag(idx)%axes = 2
